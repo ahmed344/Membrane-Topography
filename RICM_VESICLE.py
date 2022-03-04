@@ -58,12 +58,19 @@ class Height_map():
         D2 = 2 * n2 * self.d_lipid
         D3 = 2 * n3 * h
         D4 = 2 * n4 * self.d_lipid  
-
+        
+        # Effective reflection coefficient
+        R1 = r01
+        R2 = ((1-r01**2) * np.exp(-1j*k*D1)) * r12
+        R3 = ((1-r01**2)*(1-r12**2) * np.exp(-1j*k*(D1+D2))) * r23
+        R4 = ((1-r01**2)*(1-r12**2)*(1-r23**2) * np.exp(-1j*k*(D1+D2+D3))) * r34
+        R5 = ((1-r01**2)*(1-r12**2)*(1-r23**2)*(1-r34**2) * np.exp(-1j*k*(D1+D2+D3+D4))) * r45
+        
         # Effective reflection coefficient of the adhesion zone
-        R = r01 + ((1-r01**2) * np.exp(-1j*k*D1)) * r12 + ((1-r01**2)*(1-r12**2) * np.exp(-1j*k*(D1+D2))) * r23 + ((1-r01**2)*(1-r12**2)*(1-r23**2) * np.exp(-1j*k*(D1+D2+D3))) * r34 + ((1-r01**2)*(1-r12**2)*(1-r23**2)*(1-r34**2) * np.exp(-1j*k*(D1+D2+D3+D4))) * r45
+        R = R1 + R2 + R3 + R4 + R5
 
         # Effective reflection coefficient of the background
-        R_b = r01 + ((1-r01**2) * np.exp(-1j*k*D1)) * r12 + ((1-r01**2)*(1-r12**2) * np.exp(-1j*k*(D1 + D2))) * r23
+        R_b = R1 + R2 + R3
 
         # Normalized reflactance R_norm
         R_norm = (np.abs(R * np.conjugate(R)) - np.abs(R_b * np.conjugate(R_b))) / np.abs(R_b * np.conjugate(R_b))
@@ -135,12 +142,22 @@ class RICM(Height_map):
                  img,
                  denoise = True, nl_fast_mode = True, nl_patch_size = 10, nl_patch_distance = 10,
                  hole = 3,
-                 n_glass = 1.525, n_water = 1.33, n_outer = 1.33, n_lipid = 1.486, n_inner = 1.38,
+                 n_glass = 1.525, n_water = 1.333, n_outer = 1.335, n_lipid = 1.486, n_inner = 1.344,
                  d_water = 1, d_lipid = 4, l = 546):
         
-        Height_map.__init__(self,
-                            n_glass = 1.525, n_water = 1.33, n_outer = 1.33, n_lipid = 1.486, n_inner = 1.38,
-                            d_water = 1, d_lipid = 4, l = 546)
+        #Height_map.__init__(self)
+        
+        # Parameters
+        self.n_glass = n_glass      #refractive index of glass 
+        self.n_water = n_water      #refractive index of water
+        self.n_outer = n_outer      #refractive index of outer solution (PBS)
+        self.n_lipid = n_lipid      #refractive index of lipid
+        self.n_inner = n_inner      #refractive index of inner buffer (Sucrose)
+        
+        self.d_water = d_water      #thikness of water in nm
+        self.d_lipid = d_lipid      #thikness of lipid in nm
+        
+        self.l = l                  #wave length of the RICM light in nm
         
         self.img = img
         self.denoise = denoise
@@ -266,7 +283,15 @@ class RICM(Height_map):
         
 
         # Fit the parameters Y_0, A, h_0 of the cosine function
-        mapping = Height_map()
+        mapping = Height_map(n_glass = self.n_glass,
+                             n_water = self.n_water,
+                             n_outer = self.n_outer,
+                             n_lipid = self.n_lipid,
+                             n_inner = self.n_inner,
+                             d_water = self.d_water,
+                             d_lipid = self.d_lipid,
+                             l       = self.l)
+        
         popt, pcov = optimize.curve_fit(mapping.normalized_intensity, h, mapping.R5_norm(h))
         Y0, A, h0 = popt
         print('Y0 = {:.2f}, A = {:.2f}, h0 = {:.2f}'.format(*popt))
@@ -281,9 +306,16 @@ class RICM(Height_map):
         
 
         # Fit the parameters Y_0, A, h_0 of the cosine function
-        mapping = Height_map()
+        mapping = Height_map(n_glass = self.n_glass,
+                             n_water = self.n_water,
+                             n_outer = self.n_outer,
+                             n_lipid = self.n_lipid,
+                             n_inner = self.n_inner,
+                             d_water = self.d_water,
+                             d_lipid = self.d_lipid,
+                             l       = self.l)
+        
         popt, pcov = optimize.curve_fit(mapping.normalized_intensity, h, mapping.R5_norm(h))
         Y0, A, h0 = popt
-        print('Y0 = {:.2f}, A = {:.2f}, h0 = {:.2f}'.format(*popt))
 
         return (Y0 - img_background_normalized) / A
