@@ -17,7 +17,7 @@ class Height_map():
                  n_inner = 1.344,
                  d_water = 1,
                  d_lipid = 4,
-                 l = 546):
+                 l       = 546):
        
         # Parameters
         self.n_glass = n_glass      #refractive index of glass 
@@ -92,14 +92,15 @@ class RICM(Height_map):
     
     def __init__(self,
                  img,
-                 denoise = True, nl_fast_mode = True, nl_patch_size = 10, nl_patch_distance = 10,
-                 hole = 3,
-                 n_glass = 1.525, n_water = 1.333, n_outer = 1.335, n_lipid = 1.486, n_inner = 1.344,
-                 d_water = 1, d_lipid = 4, l = 546):
+                 denoise=True, nl_fast_mode=True, nl_patch_size=10, nl_patch_distance=10,
+                 hole=3,
+                 n_glass=1.525, n_water=1.333, n_outer=1.335, n_lipid=1.486, n_inner=1.344,
+                 d_water=1, d_lipid=4, l=546):
         
-        #Height_map.__init__(self)
+        # The image
+        self.img = img
         
-        # Parameters
+        # RICM parameters
         self.n_glass = n_glass      #refractive index of glass 
         self.n_water = n_water      #refractive index of water
         self.n_outer = n_outer      #refractive index of outer solution (PBS)
@@ -111,12 +112,13 @@ class RICM(Height_map):
         
         self.l = l                  #wave length of the RICM light in nm
         
-        self.img = img
+        # Denoising parameters
         self.denoise = denoise
         self.nl_fast_mode = nl_fast_mode
         self.nl_patch_size = nl_patch_size
         self.nl_patch_distance = nl_patch_distance
         self.hole = hole
+        
         
     # Denoise the image using Non-local means denoising algorithm
     def nl_denoise(self):
@@ -148,6 +150,7 @@ class RICM(Height_map):
 
         return edge
 
+    
     # Determine the contact zone by filling the closed edges inside the binary image of the edges
     def mask(self):
 
@@ -205,6 +208,7 @@ class RICM(Height_map):
 
         return self.img - Background + avg_background
 
+    
     # Normalized reflactance to the background
     def background_normalization(self):
 
@@ -228,7 +232,7 @@ class RICM(Height_map):
     
     
     # RICM height mapping
-    def height(self, h = np.linspace(1, 600, 600)):
+    def height(self, h=np.linspace(1, 600, 600)):
         
         # Normalized reflactance to the background
         img_background_normalized =  RICM.background_normalization(self)
@@ -250,8 +254,9 @@ class RICM(Height_map):
 
         return (self.l / (4 * np.pi * self.n_outer)) * np.arccos((Y0 - img_background_normalized) / A) + h0    
     
+    
     # RICM height mapping argument
-    def height_argument(self, h = np.linspace(1, 600, 600)):
+    def height_argument(self, h=np.linspace(1, 600, 600)):
         
         # Normalized reflactance to the background
         img_background_normalized =  RICM.background_normalization(self)
@@ -271,3 +276,78 @@ class RICM(Height_map):
         Y0, A, h0 = popt
 
         return (Y0 - img_background_normalized) / A
+    
+    
+    def show_summary(self, name='summary', save=False):
+        
+        # Display the way to the RICM height mapping step by step
+        plt.figure(figsize=(23,7))
+
+        plt.subplot(251)
+        plt.axis('off')
+        plt.title('Orginal image')
+        plt.imshow(self.img, cmap = "gray")
+        plt.colorbar()
+
+        plt.subplot(252)
+        plt.axis('off')
+        plt.title('Denoised image')
+        plt.imshow(RICM.nl_denoise(self) , cmap = 'gray')
+        plt.colorbar()
+
+        plt.subplot(253)
+        plt.axis('off')
+        plt.title('Edge detected image')
+        plt.imshow(RICM.edge_detection(self) , cmap = 'gray')
+        plt.colorbar();
+
+        plt.subplot(254)
+        plt.axis('off')
+        plt.title('Masked image')
+        plt.imshow(RICM.mask(self) , cmap = 'gray')
+
+        plt.subplot(255)
+        plt.axis('off')
+        plt.title('Background fitted image')
+        plt.imshow(RICM.background_fitting(self) , cmap = 'gray')
+        plt.colorbar();
+
+        plt.subplot(256)
+        plt.axis('off')
+        plt.title('Corrected image')
+        plt.imshow(RICM.correct(self) , cmap = 'gray')
+        plt.colorbar()
+
+        plt.subplot(257)
+        plt.axis('off')
+        plt.title('Background normalized image')
+        plt.imshow(RICM.background_normalization(self) , cmap = 'gray')
+        plt.colorbar()
+        
+        # Show the argument of the arccosine to make sure it's between 1 and -1
+        plt.subplot(258)
+        plt.axis('off')
+        plt.title('Arccosine argument image')
+        plt.imshow(RICM.height_argument(self) , cmap = 'inferno')
+        plt.colorbar();
+        
+        plt.subplot(259)
+        plt.axis('off')
+        plt.title('Height image')
+        plt.imshow(RICM.height(self) , cmap = 'inferno')
+        plt.colorbar()
+        
+        plt.subplot(2,5,10)
+        plt.title('Height histogram')
+        plt.xlabel('Height')
+        #plt.ylabel('Frequency')
+        plt.hist(RICM.height(self).ravel(), bins = 200)
+        plt.grid();
+        
+        # Save the image
+        if save or name!='summary':
+            plt.savefig(name)
+
+        # Show the results
+        plt.show()
+        
