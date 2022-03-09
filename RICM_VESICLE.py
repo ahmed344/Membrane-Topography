@@ -76,56 +76,8 @@ class Height_map():
         R_norm = (np.abs(R * np.conjugate(R)) - np.abs(R_b * np.conjugate(R_b))) / np.abs(R_b * np.conjugate(R_b))
 
         return R_norm
+
     
-    # Normalized reflactance for 5 interfaces
-    def R5_norm_old(self, h):
-
-        # Wave vector
-        k = 2 * np.pi / self.l
-
-        # distance
-        d = np.array([1, self.d_water, self.d_lipid, h, self.d_lipid])
-
-        # Refractive indices
-        n = np.array([self.n_glass, self.n_water, self.n_lipid, self.n_outer, self.n_lipid, self.n_inner])
-
-        # Distance traveled by the lite 
-        D = np.array([2 * n[i] * d[i] for i in range(len(d))])
-
-        # Fresnel reflection coefficient
-        r = np.array([(n[i] - n[i+1]) / (n[i] + n[i+1]) for i in range(len(n)-1)])
-
-        # Reflactance R
-        P = np.array([
-            1,
-            (1-r[0]**2) * np.exp(-1J * k * D[1]),
-            (1-r[0]**2)*(1-r[1]**2) * np.exp(-1J * k * (D[1]+D[2])),
-            (1-r[0]**2)*(1-r[1]**2)*(1-r[2]**2) * np.exp(-1J * k * (D[1]+D[2]+D[3])),
-            (1-r[0]**2)*(1-r[1]**2)*(1-r[2]**2)*(1-r[3]**2) * np.exp(-1J * k * (D[1]+D[2]+D[3]+D[4]))
-        ])
-
-        R = np.sum(P * r)
-        
-        # Take it's real absolute value
-        R = np.abs(R * np.conjugate(R))
-
-        # Reflactance R_background
-        P_background = np.array([
-            1,
-            (1-r[0]**2) * np.exp(-1J * k * D[1]),
-            (1-r[0]**2)*(1-r[1]**2) * np.exp(-1J * k * (D[1]+D[2]))
-        ])
-
-        r_background = np.array([r[0], r[1], r[2]])
-
-        R_background = np.sum(P_background * r_background)
-        
-        # Take it's real absolute value
-        R_background = np.abs(R_background * np.conjugate(R_background))
-
-        return (R - R_background) / R_background
-
-
     # The dependence of the normalized intensity on hight
     def normalized_intensity(self, h, Y0, A, h0):
         
