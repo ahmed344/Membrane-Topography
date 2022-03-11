@@ -1,9 +1,7 @@
-#! /home/ahmed/anaconda3/bin/python
-
 # Libraries
 import numpy as np
 import matplotlib.pyplot as plt
-from skimage import restoration, filters
+from skimage import restoration, filters, morphology
 from scipy import ndimage, linalg, optimize
 
 
@@ -20,16 +18,16 @@ class Height_map():
                  l       = 546):
        
         # Parameters
-        self.n_glass = n_glass      #refractive index of glass 
-        self.n_water = n_water      #refractive index of water
-        self.n_outer = n_outer      #refractive index of outer solution (PBS)
-        self.n_lipid = n_lipid      #refractive index of lipid
-        self.n_inner = n_inner      #refractive index of inner buffer (Sucrose)
+        self.n_glass = n_glass      # refractive index of glass 
+        self.n_water = n_water      # refractive index of water
+        self.n_outer = n_outer      # refractive index of outer solution (PBS)
+        self.n_lipid = n_lipid      # refractive index of lipid
+        self.n_inner = n_inner      # refractive index of inner buffer (Sucrose)
         
-        self.d_water = d_water      #thikness of water in nm
-        self.d_lipid = d_lipid      #thikness of lipid in nm
+        self.d_water = d_water      # thikness of water in nm
+        self.d_lipid = d_lipid      # thikness of lipid in nm
         
-        self.l = l                  #wave length of the RICM light in nm
+        self.l = l                  # wave length of the RICM light in nm
         
 
     # Normalized reflactance for 5 interfaces
@@ -93,7 +91,7 @@ class RICM(Height_map):
     def __init__(self,
                  img,
                  denoise=True, nl_fast_mode=True, nl_patch_size=10, nl_patch_distance=1,
-                 hole=3,
+                 hole=3, remove_small=True, min_size=64,
                  n_glass=1.525, n_water=1.333, n_outer=1.335, n_lipid=1.486, n_inner=1.344,
                  d_water=1, d_lipid=4, l=546):
         
@@ -101,23 +99,27 @@ class RICM(Height_map):
         self.img = img
         
         # RICM parameters
-        self.n_glass = n_glass      #refractive index of glass 
-        self.n_water = n_water      #refractive index of water
-        self.n_outer = n_outer      #refractive index of outer solution (PBS)
-        self.n_lipid = n_lipid      #refractive index of lipid
-        self.n_inner = n_inner      #refractive index of inner buffer (Sucrose)
+        self.n_glass = n_glass      # refractive index of glass 
+        self.n_water = n_water      # refractive index of water
+        self.n_outer = n_outer      # refractive index of outer solution (PBS)
+        self.n_lipid = n_lipid      # refractive index of lipid
+        self.n_inner = n_inner      # refractive index of inner buffer (Sucrose)
         
-        self.d_water = d_water      #thikness of water in nm
-        self.d_lipid = d_lipid      #thikness of lipid in nm
+        self.d_water = d_water      # thikness of water in nm
+        self.d_lipid = d_lipid      # thikness of lipid in nm
         
-        self.l = l                  #wave length of the RICM light in nm
+        self.l = l                  # wave length of the RICM light in nm
         
         # Denoising parameters
         self.denoise = denoise
         self.nl_fast_mode = nl_fast_mode
         self.nl_patch_size = nl_patch_size
         self.nl_patch_distance = nl_patch_distance
-        self.hole = hole
+        
+        # Mask parameters
+        self.hole = hole                     # hole filling kernel
+        self.remove_small = remove_small     # remove small defects
+        self.min_size = min_size             # minimum size for a small defect
         
         
     # Denoise the image using Non-local means denoising algorithm
@@ -138,7 +140,7 @@ class RICM(Height_map):
     # Detecting the edges
     def edge_detection(self):
         
-        if self.denoise == True:
+        if self.denoise:
             #Apply the Non-local means denoising algorithm
             img_denoised = RICM.nl_denoise(self)
 
@@ -162,8 +164,14 @@ class RICM(Height_map):
 
         # Making a binary image with 0 and 1 values
         edge_binary = np.multiply(edge > edge_threshold, 1)
+        
+        # Fill the detected edge
+        mask = ndimage.binary_fill_holes(edge_binary, structure=np.ones((self.hole, self.hole)))
+        
+        # Remove the small objects
+        if self.remove_small: mask = morphology.remove_small_objects(mask, min_size=self.min_size)
 
-        return ndimage.binary_fill_holes(edge_binary, structure=np.ones((self.hole, self.hole)))
+        return mask
 
 
     # Fitting the background
@@ -278,9 +286,9 @@ class RICM(Height_map):
         return (Y0 - img_background_normalized) / A
     
     
+    # Display the way to the RICM height mapping step by step
     def show_summary(self, name='summary', save=False):
         
-        # Display the way to the RICM height mapping step by step
         plt.figure(figsize=(23,7))
 
         plt.subplot(251)
@@ -305,6 +313,7 @@ class RICM(Height_map):
         plt.axis('off')
         plt.title('Masked image')
         plt.imshow(RICM.mask(self) , cmap = 'gray')
+        plt.colorbar();
 
         plt.subplot(255)
         plt.axis('off')
