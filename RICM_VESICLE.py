@@ -92,7 +92,7 @@ class RICM(Height_map):
     
     def __init__(self,
                  img,
-                 denoise=True, nl_fast_mode=True, nl_patch_size=10, nl_patch_distance=10,
+                 denoise=True, nl_fast_mode=True, nl_patch_size=10, nl_patch_distance=1,
                  hole=3,
                  n_glass=1.525, n_water=1.333, n_outer=1.335, n_lipid=1.486, n_inner=1.344,
                  d_water=1, d_lipid=4, l=546):
