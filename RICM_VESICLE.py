@@ -15,7 +15,8 @@ class Height_map():
                  n_inner = 1.344,
                  d_water = 1,
                  d_lipid = 4,
-                 l       = 546):
+                 l       = 546,
+                 p       = 0):
        
         # Parameters
         self.n_glass = n_glass      # refractive index of glass 
@@ -23,11 +24,10 @@ class Height_map():
         self.n_outer = n_outer      # refractive index of outer solution (PBS)
         self.n_lipid = n_lipid      # refractive index of lipid
         self.n_inner = n_inner      # refractive index of inner buffer (Sucrose)
-        
         self.d_water = d_water      # thikness of water in nm
         self.d_lipid = d_lipid      # thikness of lipid in nm
-        
         self.l = l                  # wave length of the RICM light in nm
+        self.p = p                  # phase shift of the cosine function
         
 
     # Normalized reflactance for 5 interfaces
@@ -82,7 +82,7 @@ class Height_map():
         n_outer = self.n_outer  #refractive index of PBS
         l = self.l              #wave length of the RICM light
 
-        return Y0 - A * np.cos((4 * np.pi * n_outer / l) * (h - h0))
+        return Y0 - A * np.cos((4 * np.pi * n_outer / l) * (h - h0) + 2*self.p*n_outer)
     
 
 
@@ -93,7 +93,7 @@ class RICM(Height_map):
                  denoise=True, nl_fast_mode=True, nl_patch_size=10, nl_patch_distance=1,
                  hole=3, remove_small=True, min_size=64,
                  n_glass=1.525, n_water=1.333, n_outer=1.335, n_lipid=1.486, n_inner=1.344,
-                 d_water=1, d_lipid=4, l=546):
+                 d_water=1, d_lipid=4, l=546, p=0):
         
         # The image
         self.img = img
@@ -104,12 +104,11 @@ class RICM(Height_map):
         self.n_outer = n_outer      # refractive index of outer solution (PBS)
         self.n_lipid = n_lipid      # refractive index of lipid
         self.n_inner = n_inner      # refractive index of inner buffer (Sucrose)
-        
         self.d_water = d_water      # thikness of water in nm
         self.d_lipid = d_lipid      # thikness of lipid in nm
-        
         self.l = l                  # wave length of the RICM light in nm
-        
+        self.p = p                  # phase shift of the cosine function
+
         # Denoising parameters
         self.denoise = denoise
         self.nl_fast_mode = nl_fast_mode
@@ -243,7 +242,7 @@ class RICM(Height_map):
     def height(self, h=np.linspace(1, 600, 600)):
         
         # Normalized reflactance to the background
-        img_background_normalized =  RICM.background_normalization(self)
+        img_normalized =  RICM.background_normalization(self)
         
 
         # Fit the parameters Y_0, A, h_0 of the cosine function
@@ -254,20 +253,21 @@ class RICM(Height_map):
                              n_inner = self.n_inner,
                              d_water = self.d_water,
                              d_lipid = self.d_lipid,
-                             l       = self.l)
+                             l       = self.l,
+                             p       = self.p)
         
         popt, pcov = optimize.curve_fit(mapping.normalized_intensity, h, mapping.R5_norm(h))
         Y0, A, h0 = popt
         print('Y0 = {:.2f}, A = {:.2f}, h0 = {:.2f}'.format(*popt))
 
-        return (self.l / (4 * np.pi * self.n_outer)) * np.arccos((Y0 - img_background_normalized) / A) + h0    
+        return (self.l/(4*np.pi*self.n_outer))*np.arccos((Y0-img_normalized)/A) - (self.p*self.l)/(2*self.n_outer) + h0    
     
     
     # RICM height mapping argument
     def height_argument(self, h=np.linspace(1, 600, 600)):
         
         # Normalized reflactance to the background
-        img_background_normalized =  RICM.background_normalization(self)
+        img_normalized =  RICM.background_normalization(self)
         
 
         # Fit the parameters Y_0, A, h_0 of the cosine function
@@ -278,12 +278,13 @@ class RICM(Height_map):
                              n_inner = self.n_inner,
                              d_water = self.d_water,
                              d_lipid = self.d_lipid,
-                             l       = self.l)
+                             l       = self.l,
+                             p       = self.p)
         
         popt, pcov = optimize.curve_fit(mapping.normalized_intensity, h, mapping.R5_norm(h))
         Y0, A, h0 = popt
 
-        return (Y0 - img_background_normalized) / A
+        return (Y0-img_normalized)/A 
     
     
     # Display the way to the RICM height mapping step by step
