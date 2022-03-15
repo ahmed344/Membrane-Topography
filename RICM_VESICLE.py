@@ -26,8 +26,8 @@ class Height_map():
         self.n_inner = n_inner      # refractive index of inner buffer (Sucrose)
         self.d_water = d_water      # thikness of water in nm
         self.d_lipid = d_lipid      # thikness of lipid in nm
-        self.l = l                  # wave length of the RICM light in nm
-        self.p = p                  # phase shift of the cosine function
+        self.l       = l            # wave length of the RICM light in nm
+        self.p       = p            # phase shift of the cosine function
         
 
     # Normalized reflactance for 5 interfaces
@@ -45,11 +45,11 @@ class Height_map():
         n5 = self.n_inner    # Inner buffer Sucrose
 
         # Fresnel reflection coefficients
-        r01 = (n0 - n1) / (n0 + n1)
-        r12 = (n1 - n2) / (n1 + n2)
-        r23 = (n2 - n3) / (n2 + n3)
-        r34 = (n3 - n4) / (n3 + n4)
-        r45 = (n4 - n5) / (n4 + n5)
+        r01 = (n0-n1) / (n0+n1)
+        r12 = (n1-n2) / (n1+n2)
+        r23 = (n2-n3) / (n2+n3)
+        r34 = (n3-n4) / (n3+n4)
+        r45 = (n4-n5) / (n4+n5)
 
         # Distances traveled by light
         D1 = 2 * n1 * self.d_water
@@ -260,7 +260,7 @@ class RICM(Height_map):
         Y0, A, h0 = popt
         print('Y0 = {:.2f}, A = {:.2f}, h0 = {:.2f}'.format(*popt))
 
-        return (self.l/(4*np.pi*self.n_outer))*np.arccos((Y0-img_normalized)/A) - (self.p*self.l)/(2*self.n_outer) + h0    
+        return (self.l/(4*np.pi*self.n_outer)) * (np.arccos((Y0-img_normalized)/A) - 2*np.pi*self.p) + h0    
     
     
     # RICM height mapping argument
