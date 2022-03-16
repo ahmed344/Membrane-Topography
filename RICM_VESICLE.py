@@ -82,7 +82,7 @@ class Height_map():
         n_outer = self.n_outer  #refractive index of PBS
         l = self.l              #wave length of the RICM light
 
-        return Y0 - A * np.cos((4 * np.pi * n_outer / l) * (h - h0) + 2*self.p*n_outer)
+        return Y0 - A * np.cos((4 * np.pi * n_outer / l) * (h - h0) + 2*np.pi*self.p)
     
 
 
