@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage import restoration, filters, morphology
 from scipy import ndimage, linalg, optimize
+from FITTING import Fit_Gaussian
 
 
 class Height_map():
@@ -232,8 +233,12 @@ class RICM(Height_map):
                 if edge_binary_filled[i, j] == False:  # excluding the contact zone
                     background_corrected_intensities.append(img_corrected[i,j])
 
-        # Take the average of the corrected bacground
-        avg_corrected_background = np.average(background_corrected_intensities)
+        # Transform the corrected bacground into array
+        background_corrected_intensities = np.array(background_corrected_intensities)
+        
+        # Fit a gaussian on the corrected_background histogram then take it's mean
+        gauss = Fit_Gaussian(background_corrected_intensities, normalized=True)
+        avg_corrected_background, _ = gauss.hist_fitting()
 
         return (img_corrected - avg_corrected_background) / avg_corrected_background
     
