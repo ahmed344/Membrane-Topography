@@ -30,9 +30,9 @@ class Fit_Gaussian():
         """
         # Make a histogram
         if self.normalized:
-            n, bins_ = np.histogram(self.data, bins=bins, density = True)
+            n, bins_ = np.histogram(self.data[np.isfinite(self.data)], bins=bins, density=True)
         else:
-            n, bins_ = np.histogram(self.data, bins=bins)
+            n, bins_ = np.histogram(self.data[np.isfinite(self.data)], bins=bins)
 
 
         # Data

@@ -32,7 +32,7 @@ class Height_map():
         
 
     # Normalized reflactance for 5 interfaces
-    def R5_norm(self, h):
+    def i5_norm(self, h):
 
         # Wave vector
         k = (2 * np.pi) / self.l
@@ -261,7 +261,7 @@ class RICM(Height_map):
                              l       = self.l,
                              p       = self.p)
         
-        popt, pcov = optimize.curve_fit(mapping.normalized_intensity, h, mapping.R5_norm(h))
+        popt, pcov = optimize.curve_fit(mapping.normalized_intensity, h, mapping.i5_norm(h))
         Y0, A, h0 = popt
         print('Y0 = {:.2f}, A = {:.2f}, h0 = {:.2f}'.format(*popt))
 
@@ -286,7 +286,7 @@ class RICM(Height_map):
                              l       = self.l,
                              p       = self.p)
         
-        popt, pcov = optimize.curve_fit(mapping.normalized_intensity, h, mapping.R5_norm(h))
+        popt, pcov = optimize.curve_fit(mapping.normalized_intensity, h, mapping.i5_norm(h))
         Y0, A, h0 = popt
 
         return (Y0-img_normalized)/A 
@@ -354,7 +354,7 @@ class RICM(Height_map):
         
         plt.subplot(2,5,10)
         plt.title('Height histogram')
-        plt.xlabel('Height')
+        plt.xlabel('$h_{[nm]}$')
         #plt.ylabel('Frequency')
         plt.hist(RICM.height(self).ravel(), bins = 200)
         plt.grid();
