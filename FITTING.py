@@ -54,13 +54,13 @@ class Fit_Gaussian():
             plt.figure(figsize=(8,5))
             
             if self.normalized:
-                plt.plot(x, Fit_Gaussian.Gauss_normalized(x, *popt), 'r-',
+                plt.plot(x, Fit_Gaussian.Gauss_normalized(x, *popt), 'r-', alpha = 0.6,
                          label='Gauss: $x_0$ = {:.4f}, $\sigma$ = {:.4f}'.format(*popt))
             else:
-                plt.plot(x, Fit_Gaussian.Gauss(x, *popt), 'r-',
+                plt.plot(x, Fit_Gaussian.Gauss(x, *popt), 'r-', alpha = 0.6,
                          label='Gauss: $x_0$ = {:.4f}, $\sigma$ = {:.4f}, $Y_0$ = {:.4f}, A = {:.4f}'.format(*popt))
             
-            plt.plot(x, y, 'b+:', label='data')            
+            plt.plot(x, y, 'b+:', alpha = 0.4, label='data')            
             plt.legend()
             plt.title('Histogram Gaussian')
             plt.xlabel('value')
