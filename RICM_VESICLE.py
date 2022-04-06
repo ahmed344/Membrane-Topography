@@ -2,7 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage import restoration, filters, morphology
-from scipy import ndimage, linalg, optimize
+from scipy import ndimage,linalg, optimize
 from FITTING import Fit_Gaussian
 
 
@@ -85,6 +85,103 @@ class Height_map():
 
         return Y0 - A * np.cos((4 * np.pi * n_outer / l) * (h - h0) + 2*np.pi*self.p)
     
+
+
+class RICM_diaphragm():
+    
+    def __init__(self, img, threshold):
+       
+        # Parameters
+        self.img       = img
+        self.threshold = threshold
+
+    # Fitting the background
+    def background_fitting(self):
+
+        # Write the data in terms of 3-dim points
+        coord_background_intensity = []
+        for i in range(self.img.shape[0]):
+            for j in range(self.img.shape[1]):
+                if self.img[i, j] > self.threshold:  # excluding the contact zones and the diaphragm
+                    coord_background_intensity.append([i, j, self.img[i,j]])
+
+        # 3-dim data points
+        data = np.array(coord_background_intensity)
+
+        # best-fit quadratic curve
+        A = np.c_[np.ones(data.shape[0]), data[:,:2], np.prod(data[:,:2], axis=1), data[:,:2]**2]
+        C,_,_,_ = linalg.lstsq(A, data[:,2])
+
+        # Copy the original img
+        Background = np.ones(self.img.shape)
+
+        # Fill the bacground with the values came from the fitting
+        for X in range(self.img.shape[0]):
+            for Y in range(self.img.shape[1]):
+                Background[X,Y] = C[0] + C[1]*X + C[2]*Y + C[3]*X*Y + C[4]*X*X + C[5]*Y*Y
+
+        return Background
+    
+    # Correcting the image by subtracting the background then add it's average to each pixel
+    def correct(self):
+
+        # Fitting the background
+        Background = RICM_diaphragm.background_fitting(self)
+
+        # Take the average of the bacground
+        avg_background = np.average(Background)
+
+        return self.img - Background + avg_background
+    
+    # Display the way to the RICM height mapping step by step
+    def show_summary(self, name='diaphragm_summary', save=False):
+
+        # display the image and it's histogram
+        plt.figure(figsize=(18,10))
+
+        plt.subplot(231)
+        plt.axis('off')
+        plt.title('Orginal image', fontsize='x-large')
+        plt.imshow(self.img, cmap = "gray", vmin=300)
+        plt.colorbar();
+
+        plt.subplot(232)
+        plt.axis('off')
+        plt.title('Masked image', fontsize='x-large')
+        plt.imshow(self.img > self.threshold, cmap = "gray")
+        plt.colorbar()
+
+        plt.subplot(233)
+        plt.title('Original histogram')
+        plt.hist(self.img.ravel(), bins = 500)
+        plt.xlim(300, self.img.max())
+        plt.grid()
+
+        plt.subplot(234)
+        plt.axis('off')
+        plt.title('Background fitted image', fontsize='x-large')
+        plt.imshow(RICM_diaphragm.background_fitting(self), cmap = "gray")
+        plt.colorbar()
+
+        plt.subplot(235)
+        plt.axis('off')
+        plt.title('Corrected image', fontsize='x-large')
+        plt.imshow(RICM_diaphragm.correct(self), cmap = "gray", vmin=300)
+        plt.colorbar()
+
+        plt.subplot(236)
+        plt.title('Corrected histogram')
+        plt.hist(RICM_diaphragm.correct(self).ravel(), bins = 10000)
+        plt.xlim(300, self.img.max())
+        plt.grid();
+        
+        # Save the image
+        if save or name!='diaphragm_summary':
+            plt.savefig(name)
+
+        # Show the results
+        plt.show()
+
 
 
 class RICM(Height_map):
@@ -364,5 +461,4 @@ class RICM(Height_map):
             plt.savefig(name)
 
         # Show the results
-        plt.show()
-        
+        plt.show()   
