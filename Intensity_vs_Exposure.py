@@ -1,4 +1,5 @@
 # Libraries
+import numpy as np
 import matplotlib.pyplot as plt
 
 # Modules
@@ -22,11 +23,22 @@ for i in range(1,31):
     # Append the exposure time and the intensity
     exposures.append(exposure)
     intensities.append(intensity)
+
+# Transform them into numpy arrays
+exposures = np.array(exposures)
+intensities = np.array(intensities)
+
+# Fit a line on the point
+m, b = np.polyfit(exposures, intensities, 1)   # m:slope, b:intercept
+
     
 # Show the Results
 plt.figure(figsize=(10,10))
 
-plt.scatter(exposures, intensities, label = 'intensity')
+plt.scatter(exposures, intensities, label = 'Intensity', alpha=0.5)
+
+plt.plot(exposures, m*exposures + b, label = f'Fitting = ({m:.2f}) X + ({b:.2f})', color='red', alpha=0.5)
+
 plt.title('Intensity vs Exposure', fontsize='x-large')
 plt.xlabel('Exposure [ms]', fontsize='x-large')
 plt.ylabel('Intensity', fontsize='x-large')
