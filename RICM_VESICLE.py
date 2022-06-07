@@ -176,8 +176,7 @@ class RICM_diaphragm():
         plt.grid();
         
         # Save the image
-        if save or name!='diaphragm_summary':
-            plt.savefig(name)
+        if save: plt.savefig(name)
 
         # Show the results
         plt.show()
@@ -457,8 +456,49 @@ class RICM(Height_map):
         plt.grid();
         
         # Save the image
-        if save or name!='summary':
-            plt.savefig(name)
+        if save: plt.savefig(name)
 
         # Show the results
-        plt.show()   
+        plt.show()
+        
+    def model_fitting(self, name='diaphragm_summary', h=np.linspace(-100, 200, 600), show=False, save=False):
+
+        # Define the Normalized intensity, height only on the contact zone using the mask
+        mask     = RICM.mask(self)
+        i_norm   = RICM.background_normalization(self)
+        i_height = RICM.height(self, h)            
+
+        # Remove the maked values without removing the original zeros
+        i_norm[~mask]   = np.nan
+        i_height[~mask] = np.nan
+        
+        if show:
+            # Plot the model vs data
+            plt.figure(figsize=(20,5))
+
+            # The histogram of the normalized image
+            plt.subplot(121)
+            plt.hist(RICM.background_normalization(self).ravel(), bins=200, label='Whole Image')
+            plt.hist(i_norm.ravel(), bins=200, color='r', alpha=0.8, label='Contact Zone')
+            plt.title('Normalized image histogram', fontsize='x-large')
+            plt.xlabel('$I_{norm}$', fontsize='x-large')
+            plt.ylabel('Frequency', fontsize='x-large')
+            plt.legend(fontsize='x-large')
+            plt.grid()
+
+            plt.subplot(122)
+            plt.plot(h, RICM.i5_norm(self, h), '--', label='Model $I_{norm}\ (h)$')
+            plt.scatter(i_height, i_norm, color='r', alpha=0.3, label='Contact Zone Intensity')
+            plt.title(f'$I_n(h)$ for $\lambda$ = {self.l}, n_inner = {self.n_inner} and $\phi$ = {self.p}', fontsize='x-large')
+            plt.xlabel('$h_{[nm]}$', fontsize='x-large')
+            plt.ylabel('$I_{norm}$', fontsize='x-large')
+            plt.legend(fontsize='x-large')
+            plt.grid()
+
+            # Save the image
+            if save:plt.savefig(name)
+
+            # Show the results
+            plt.show()
+            
+        return i_height, i_norm
